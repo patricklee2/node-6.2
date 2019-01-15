@@ -30,8 +30,6 @@ if (!startupCommand) {
     }
 }
 
-var finalCommand = startupCommand;
-
 // No scripts.start; can we autodetect an app?
 if (!startupCommand) {
     var autos = ['bin/www', 'server.js', 'app.js', 'index.js', 'hostingstart.js'];
@@ -39,38 +37,23 @@ if (!startupCommand) {
         var filename = "/home/site/wwwroot/" + autos[i];
         if (fs.existsSync(filename)) {
             console.log("No startup command entered, but found " + filename);
-            finalCommand = filename;
+            startupCommand = "pm2 start " + filename+ " --no-daemon";
             break;
         }
     }
 }
 
 // Still nothing, run the default static site
-if (!startupCommand && !finalCommand) {
+if (!startupCommand) {
     console.log("No startup command or autodetected startup script " +
         "found. Running default static site.");
-    finalCommand = DEFAULTAPP;
+    startupCommand = "pm2 start " + DEFAULTAPP + " --no-daemon";
 }
 
-if (finalCommand && fs.existsSync(finalCommand)) {
-    if (process.env.APPSVC_REMOTE_DEBUGGING == "TRUE")
-    {
-        if (process.env.APPSVC_REMOTE_DEBUGGING_BREAK == "TRUE")
-        {
-            startupCommand = "node --inspect-brk=0.0.0.0:" + process.env.APPSVC_TUNNEL_PORT + " " + finalCommand;
-        }
-        else
-        {
-            startupCommand = "node --inspect=0.0.0.0:" + process.env.APPSVC_TUNNEL_PORT + " " + finalCommand;
-        }
-    }
-    else
-    {
-        // Run with pm2
-        startupCommand = "pm2 start " + finalCommand + " --no-daemon";
-    }
+if (startupCommand && fs.existsSync(startupCommand)) {
+    // Run with pm2
+    startupCommand = "pm2 start " + startupCommand + " --no-daemon";
 }
-
 
 // Write to file
 fs.writeFileSync(CMDFILE, startupCommand);
